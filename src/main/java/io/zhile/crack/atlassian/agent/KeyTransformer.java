@@ -25,6 +25,12 @@ public class KeyTransformer implements ClassFileTransformer {
     private static final String LICENSE_DECODER_PATH = "com/atlassian/extras/decoder/v2/Version2LicenseDecoder";
     private static final String LICENSE_DECODER_CLASS = "com.atlassian.extras.decoder.v2.Version2LicenseDecoder";
 
+    private final String atlassianDir;
+
+    public KeyTransformer(String atlassianDir) {
+        this.atlassianDir = atlassianDir;
+    }
+
     @Override
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
         if (className == null) {
@@ -81,12 +87,10 @@ public class KeyTransformer implements ClassFileTransformer {
      */
     private byte[] handleLicenseDecoder() throws IllegalClassFormatException {
         try {
-            // 我不知道怎么从 com.atlassian.bitbucket.internal.launcher.BitbucketServerLauncher 读取这个路径，所以我直接 HARD CODE
-            // Forgive me pls...
+            System.out.println();
+            System.out.println("============ agent: the ATLASSIAN_DIR is " + atlassianDir + " ============");
+            System.out.println();
 
-            Map<String, String> osEnv = System.getenv();
-            String atlassianDir = osEnv.get("ATLASSIAN_DIR");
-            System.out.println("the ATLASSIAN_DIR is：" + atlassianDir);
             File libs = new File(atlassianDir);
             ClassPool cp = ClassPool.getDefault();
 
@@ -127,7 +131,7 @@ public class KeyTransformer implements ClassFileTransformer {
 
             CtClass target = cp.getCtClass(LICENSE_DECODER_CLASS);
             CtMethod verifyLicenseHash = target.getDeclaredMethod("verifyLicenseHash");
-            verifyLicenseHash.setBody("{System.out.println(\"atlassian-agent: skip license hash check\");}");
+            verifyLicenseHash.setBody("{System.out.println(\"=============== agent: skip license hash check ===============\");}");
             CtMethod checkAndGetLicenseText = target.getDeclaredMethod("checkAndGetLicenseText");
 
             checkAndGetLicenseText.setBody("        try {\n" +
@@ -137,7 +141,7 @@ public class KeyTransformer implements ClassFileTransformer {
                     "            int textLength = dIn.readInt();\n" +
                     "            byte[] licenseText = new byte[textLength];\n" +
                     "            dIn.read(licenseText);\n" +
-                    "            System.out.println(\"atlassian-agent: skip verify the license.\");\n" +
+                    "            System.out.println(\"=============== agent: skip verify the license. ===============\");\n" +
                     "            return licenseText;\n" +
                     "        } catch (Exception var10) {\n" +
                     "            throw new LicenseException(var10);\n" +

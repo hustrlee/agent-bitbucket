@@ -9,8 +9,11 @@ import java.lang.instrument.Instrumentation;
  */
 public class Agent {
     public static void premain(String args, Instrumentation inst) {
+
+        final String atlassian_dir = args;
+
         try {
-            inst.addTransformer(new KeyTransformer());
+            inst.addTransformer(new KeyTransformer(atlassian_dir));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
